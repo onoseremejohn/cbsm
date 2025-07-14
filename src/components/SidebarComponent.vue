@@ -6,6 +6,7 @@ import UsersIcon from './icons/UsersIcon.vue'
 import AnalyticsIcon from './icons/AnalyticsIcon.vue'
 import SettingsIcon from './icons/SettingsIcon.vue'
 import CloseIcon from './icons/CloseIcon.vue'
+import logo from '../assets/ipNX_Logo.png'
 
 interface Props {
   isOpen?: boolean
@@ -112,8 +113,8 @@ onUnmounted(() => {
     ]"
   >
     <!-- Sidebar Header -->
-    <div class="flex items-center justify-between p-6 border-b border-custom-red-500">
-      <h1 class="text-xl font-bold text-white">Dashboard</h1>
+    <div class="flex items-center justify-between p-6 border-b border-custom-red-500 bg-gray-800">
+      <img :src="logo" alt="ipNX Logo" />
       <button
         v-if="!isLargeScreen"
         @click="emit('close')"
