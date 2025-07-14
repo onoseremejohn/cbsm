@@ -1,0 +1,21 @@
+@import 'tailwindcss';
+
+@theme {
+  --color-custom-red-50: #fef2f2;
+  --color-custom-red-100: #fee2e2;
+  --color-custom-red-200: #fecaca;
+  --color-custom-red-300: #fca5a5;
+  --color-custom-red-400: #f87171;
+  --color-custom-red-500: #ef4444;
+  --color-custom-red-600: #dc2626;
+  --color-custom-red-700: #b91c1c;
+  --color-custom-red-800: #991b1b;
+  --color-custom-red-900: #7f1d1d;
+  --color-custom-red-950: #450a0a;
+
+  --width-sidebar: 260px;
+}
+
+button {
+  @apply cursor-pointer;
+}
