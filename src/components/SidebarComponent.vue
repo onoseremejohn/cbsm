@@ -2,6 +2,7 @@
 import { ref, onMounted, onUnmounted } from 'vue'
 import { useRoute } from 'vue-router'
 import DashboardIcon from './icons/DashboardIcon.vue'
+import CustomersIcon from './icons/CustomersIcon.vue'
 import UsersIcon from './icons/UsersIcon.vue'
 import AnalyticsIcon from './icons/AnalyticsIcon.vue'
 import SettingsIcon from './icons/SettingsIcon.vue'
@@ -41,7 +42,7 @@ const navLinks: NavLink[] = [
   {
     path: '/customers',
     name: 'Customers',
-    icon: UsersIcon,
+    icon: CustomersIcon,
     activePatterns: ['/customers'],
   },
   {
@@ -113,7 +114,7 @@ onUnmounted(() => {
     ]"
   >
     <!-- Sidebar Header -->
-    <div class="flex items-center justify-between p-6 border-b border-custom-red-500 bg-gray-800">
+    <div class="flex items-center justify-between p-6 border-b border-white bg-gray-800">
       <img :src="logo" alt="ipNX Logo" />
       <button
         v-if="!isLargeScreen"

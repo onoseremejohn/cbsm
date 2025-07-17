@@ -14,11 +14,37 @@ const error = ref<string | null>(null)
 const customerId = Number(route.params.id)
 
 const customerForm = reactive({
-  name: '',
-  email: '',
-  phone: '',
-  address: '',
+  contactFirstName: '',
+  contactMiddleName: '',
+  contactSurname: '',
+  businessName: '',
+  phoneNumbers: [''],
+  emailAddresses: [''],
+  physicalAddress: '',
+  addressState: '',
+  addressLocalGovernment: '',
+  addressCity: '',
 })
+
+const addPhoneNumber = () => {
+  customerForm.phoneNumbers.push('')
+}
+
+const removePhoneNumber = (index: number) => {
+  if (customerForm.phoneNumbers.length > 1) {
+    customerForm.phoneNumbers.splice(index, 1)
+  }
+}
+
+const addEmailAddress = () => {
+  customerForm.emailAddresses.push('')
+}
+
+const removeEmailAddress = (index: number) => {
+  if (customerForm.emailAddresses.length > 1) {
+    customerForm.emailAddresses.splice(index, 1)
+  }
+}
 
 const loadCustomer = async () => {
   try {
@@ -32,10 +58,16 @@ const loadCustomer = async () => {
     }
 
     // Populate form with customer data
-    customerForm.name = customer.name
-    customerForm.email = customer.email
-    customerForm.phone = customer.phone
-    customerForm.address = customer.address
+    customerForm.contactFirstName = customer.contactFirstName
+    customerForm.contactMiddleName = customer.contactMiddleName || ''
+    customerForm.contactSurname = customer.contactSurname
+    customerForm.businessName = customer.businessName
+    customerForm.phoneNumbers = [...customer.phoneNumbers]
+    customerForm.emailAddresses = [...customer.emailAddresses]
+    customerForm.physicalAddress = customer.physicalAddress
+    customerForm.addressState = customer.addressState
+    customerForm.addressLocalGovernment = customer.addressLocalGovernment
+    customerForm.addressCity = customer.addressCity
   } catch (err) {
     error.value = 'Failed to load customer data'
     console.error('Error loading customer:', err)
@@ -45,16 +77,24 @@ const loadCustomer = async () => {
 }
 
 const validateForm = () => {
-  if (!customerForm.name.trim()) {
-    error.value = 'Customer name is required'
+  if (!customerForm.businessName.trim()) {
+    error.value = 'Business name is required'
     return false
   }
-  if (!customerForm.email.trim()) {
-    error.value = 'Customer email is required'
+  if (!customerForm.contactFirstName.trim()) {
+    error.value = 'Contact first name is required'
     return false
   }
-  if (!customerForm.phone.trim()) {
-    error.value = 'Customer phone is required'
+  if (!customerForm.contactSurname.trim()) {
+    error.value = 'Contact surname is required'
+    return false
+  }
+  if (!customerForm.emailAddresses[0]?.trim()) {
+    error.value = 'At least one email address is required'
+    return false
+  }
+  if (!customerForm.phoneNumbers[0]?.trim()) {
+    error.value = 'At least one phone number is required'
     return false
   }
 
@@ -69,10 +109,16 @@ const handleSubmit = async () => {
     error.value = null
 
     await customerApi.updateCustomer(customerId, {
-      name: customerForm.name.trim(),
-      email: customerForm.email.trim(),
-      phone: customerForm.phone.trim(),
-      address: customerForm.address.trim(),
+      contactFirstName: customerForm.contactFirstName.trim(),
+      contactMiddleName: customerForm.contactMiddleName.trim(),
+      contactSurname: customerForm.contactSurname.trim(),
+      businessName: customerForm.businessName.trim(),
+      phoneNumbers: customerForm.phoneNumbers.filter((phone) => phone.trim()),
+      emailAddresses: customerForm.emailAddresses.filter((email) => email.trim()),
+      physicalAddress: customerForm.physicalAddress.trim(),
+      addressState: customerForm.addressState.trim(),
+      addressLocalGovernment: customerForm.addressLocalGovernment.trim(),
+      addressCity: customerForm.addressCity.trim(),
     })
 
     // Navigate back to customer detail page
@@ -91,7 +137,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="max-w-2xl mx-auto space-y-6">
+  <div class="max-w-4xl mx-auto space-y-6">
     <!-- Header -->
     <div class="flex items-center gap-4">
       <BackButton />
@@ -115,60 +161,187 @@ onMounted(() => {
     <!-- Form -->
     <form v-else @submit.prevent="handleSubmit" class="space-y-6">
       <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+        <h3 class="text-lg font-medium text-gray-900 mb-4">Customer Information</h3>
+
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
-            <label for="name" class="block text-sm font-medium text-gray-700 mb-2">
-              Full Name *
+            <label for="businessName" class="block text-sm font-medium text-gray-700 mb-2">
+              Business Name *
             </label>
             <input
-              id="name"
-              v-model="customerForm.name"
+              id="businessName"
+              v-model="customerForm.businessName"
               type="text"
               required
               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-custom-red-500 focus:border-custom-red-500"
-              placeholder="Enter customer name"
+              placeholder="Enter business name"
             />
           </div>
 
           <div>
-            <label for="email" class="block text-sm font-medium text-gray-700 mb-2">
-              Email *
+            <label for="contactFirstName" class="block text-sm font-medium text-gray-700 mb-2">
+              Contact First Name *
             </label>
             <input
-              id="email"
-              v-model="customerForm.email"
-              type="email"
+              id="contactFirstName"
+              v-model="customerForm.contactFirstName"
+              type="text"
               required
               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-custom-red-500 focus:border-custom-red-500"
-              placeholder="Enter email address"
+              placeholder="Enter first name"
             />
           </div>
 
           <div>
-            <label for="phone" class="block text-sm font-medium text-gray-700 mb-2">
-              Phone *
+            <label for="contactMiddleName" class="block text-sm font-medium text-gray-700 mb-2">
+              Contact Middle Name
             </label>
             <input
-              id="phone"
-              v-model="customerForm.phone"
-              type="tel"
-              required
-              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-custom-red-500 focus:border-custom-red-500"
-              placeholder="Enter phone number"
-            />
-          </div>
-
-          <div>
-            <label for="address" class="block text-sm font-medium text-gray-700 mb-2">
-              Address
-            </label>
-            <input
-              id="address"
-              v-model="customerForm.address"
+              id="contactMiddleName"
+              v-model="customerForm.contactMiddleName"
               type="text"
               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-custom-red-500 focus:border-custom-red-500"
-              placeholder="Enter address"
+              placeholder="Enter middle name"
             />
+          </div>
+
+          <div>
+            <label for="contactSurname" class="block text-sm font-medium text-gray-700 mb-2">
+              Contact Surname *
+            </label>
+            <input
+              id="contactSurname"
+              v-model="customerForm.contactSurname"
+              type="text"
+              required
+              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-custom-red-500 focus:border-custom-red-500"
+              placeholder="Enter surname"
+            />
+          </div>
+
+          <div>
+            <label for="physicalAddress" class="block text-sm font-medium text-gray-700 mb-2">
+              Physical Address
+            </label>
+            <input
+              id="physicalAddress"
+              v-model="customerForm.physicalAddress"
+              type="text"
+              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-custom-red-500 focus:border-custom-red-500"
+              placeholder="Enter physical address"
+            />
+          </div>
+
+          <div>
+            <label for="addressState" class="block text-sm font-medium text-gray-700 mb-2">
+              State
+            </label>
+            <input
+              id="addressState"
+              v-model="customerForm.addressState"
+              type="text"
+              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-custom-red-500 focus:border-custom-red-500"
+              placeholder="Enter state"
+            />
+          </div>
+
+          <div>
+            <label for="addressCity" class="block text-sm font-medium text-gray-700 mb-2">
+              City
+            </label>
+            <input
+              id="addressCity"
+              v-model="customerForm.addressCity"
+              type="text"
+              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-custom-red-500 focus:border-custom-red-500"
+              placeholder="Enter city"
+            />
+          </div>
+
+          <div>
+            <label
+              for="addressLocalGovernment"
+              class="block text-sm font-medium text-gray-700 mb-2"
+            >
+              Local Government
+            </label>
+            <input
+              id="addressLocalGovernment"
+              v-model="customerForm.addressLocalGovernment"
+              type="text"
+              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-custom-red-500 focus:border-custom-red-500"
+              placeholder="Enter local government"
+            />
+          </div>
+        </div>
+
+        <!-- Phone Numbers -->
+        <div class="mt-6">
+          <label class="block text-sm font-medium text-gray-700 mb-2"> Phone Numbers * </label>
+          <div class="space-y-2">
+            <div
+              v-for="(phone, index) in customerForm.phoneNumbers"
+              :key="index"
+              class="flex gap-2"
+            >
+              <input
+                v-model="customerForm.phoneNumbers[index]"
+                type="tel"
+                :required="index === 0"
+                class="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-custom-red-500 focus:border-custom-red-500"
+                placeholder="Enter phone number"
+              />
+              <button
+                v-if="customerForm.phoneNumbers.length > 1"
+                type="button"
+                @click="removePhoneNumber(index)"
+                class="px-3 py-2 text-red-600 hover:text-red-800"
+              >
+                Remove
+              </button>
+            </div>
+            <button
+              type="button"
+              @click="addPhoneNumber"
+              class="text-custom-red-600 hover:text-custom-red-800 text-sm"
+            >
+              + Add Phone Number
+            </button>
+          </div>
+        </div>
+
+        <!-- Email Addresses -->
+        <div class="mt-6">
+          <label class="block text-sm font-medium text-gray-700 mb-2"> Email Addresses * </label>
+          <div class="space-y-2">
+            <div
+              v-for="(email, index) in customerForm.emailAddresses"
+              :key="index"
+              class="flex gap-2"
+            >
+              <input
+                v-model="customerForm.emailAddresses[index]"
+                type="email"
+                :required="index === 0"
+                class="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-custom-red-500 focus:border-custom-red-500"
+                placeholder="Enter email address"
+              />
+              <button
+                v-if="customerForm.emailAddresses.length > 1"
+                type="button"
+                @click="removeEmailAddress(index)"
+                class="px-3 py-2 text-red-600 hover:text-red-800"
+              >
+                Remove
+              </button>
+            </div>
+            <button
+              type="button"
+              @click="addEmailAddress"
+              class="text-custom-red-600 hover:text-custom-red-800 text-sm"
+            >
+              + Add Email Address
+            </button>
           </div>
         </div>
       </div>

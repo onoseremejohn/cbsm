@@ -1,9 +1,15 @@
 export interface Customer {
   id: number
-  name: string
-  email: string
-  phone: string
-  address: string
+  contactFirstName: string
+  contactMiddleName?: string
+  contactSurname: string
+  businessName: string
+  phoneNumbers: string[]
+  emailAddresses: string[]
+  physicalAddress: string
+  addressState: string
+  addressLocalGovernment: string
+  addressCity: string
   createdAt: string
   updatedAt: string
 }
@@ -11,11 +17,28 @@ export interface Customer {
 export interface Service {
   id: number
   customerId: number
-  name: string
+  serviceCode: string
   description: string
+  status: 'active' | 'suspended' | 'cancelled' | 'terminated'
+  bandwidth: string
+  serviceType: string
+  servicePlatform: string
+  billingCycle: string
+  billingCycleAmount: number
+  cycleStartDate: string
+  cycleEndDate: string
+  billingMode: string
+  serviceAddress: string
+  addressState: string
+  addressCity: string
+  addressLocalGovernment: string
+  serialNumber: string
+  macAddress: string
+  coreDevice: string
+  coreInterface: string
+  networkPlatform: string
+  wanIpAddress: string
   price: number
-  status: 'pending' | 'completed' | 'cancelled'
-  isPaid: boolean
   createdAt: string
   updatedAt: string
 }

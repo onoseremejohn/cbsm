@@ -10,29 +10,89 @@ const loading = ref(false)
 const error = ref<string | null>(null)
 
 const customerForm = reactive({
-  name: '',
-  email: '',
-  phone: '',
-  address: '',
+  contactFirstName: '',
+  contactMiddleName: '',
+  contactSurname: '',
+  businessName: '',
+  phoneNumbers: [''],
+  emailAddresses: [''],
+  physicalAddress: '',
+  addressState: '',
+  addressLocalGovernment: '',
+  addressCity: '',
 })
 
 const services = ref<Partial<Service>[]>([
   {
-    name: '',
+    serviceCode: '',
     description: '',
+    status: 'active' as const,
+    bandwidth: '',
+    serviceType: '',
+    servicePlatform: '',
+    billingCycle: '',
+    billingCycleAmount: 0,
+    cycleStartDate: '',
+    cycleEndDate: '',
+    billingMode: '',
+    serviceAddress: '',
+    addressState: '',
+    addressCity: '',
+    addressLocalGovernment: '',
+    serialNumber: '',
+    macAddress: '',
+    coreDevice: '',
+    coreInterface: '',
+    networkPlatform: '',
+    wanIpAddress: '',
     price: 0,
-    status: 'pending' as const,
-    isPaid: false,
   },
 ])
 
+const addPhoneNumber = () => {
+  customerForm.phoneNumbers.push('')
+}
+
+const removePhoneNumber = (index: number) => {
+  if (customerForm.phoneNumbers.length > 1) {
+    customerForm.phoneNumbers.splice(index, 1)
+  }
+}
+
+const addEmailAddress = () => {
+  customerForm.emailAddresses.push('')
+}
+
+const removeEmailAddress = (index: number) => {
+  if (customerForm.emailAddresses.length > 1) {
+    customerForm.emailAddresses.splice(index, 1)
+  }
+}
+
 const addService = () => {
   services.value.push({
-    name: '',
+    serviceCode: '',
     description: '',
+    status: 'active' as const,
+    bandwidth: '',
+    serviceType: '',
+    servicePlatform: '',
+    billingCycle: '',
+    billingCycleAmount: 0,
+    cycleStartDate: '',
+    cycleEndDate: '',
+    billingMode: '',
+    serviceAddress: '',
+    addressState: '',
+    addressCity: '',
+    addressLocalGovernment: '',
+    serialNumber: '',
+    macAddress: '',
+    coreDevice: '',
+    coreInterface: '',
+    networkPlatform: '',
+    wanIpAddress: '',
     price: 0,
-    status: 'pending' as const,
-    isPaid: false,
   })
 }
 
@@ -43,23 +103,31 @@ const removeService = (index: number) => {
 }
 
 const validateForm = () => {
-  if (!customerForm.name.trim()) {
-    error.value = 'Customer name is required'
+  if (!customerForm.businessName.trim()) {
+    error.value = 'Business name is required'
     return false
   }
-  if (!customerForm.email.trim()) {
-    error.value = 'Customer email is required'
+  if (!customerForm.contactFirstName.trim()) {
+    error.value = 'Contact first name is required'
     return false
   }
-  if (!customerForm.phone.trim()) {
-    error.value = 'Customer phone is required'
+  if (!customerForm.contactSurname.trim()) {
+    error.value = 'Contact surname is required'
+    return false
+  }
+  if (!customerForm.emailAddresses[0]?.trim()) {
+    error.value = 'At least one email address is required'
+    return false
+  }
+  if (!customerForm.phoneNumbers[0]?.trim()) {
+    error.value = 'At least one phone number is required'
     return false
   }
 
   for (let i = 0; i < services.value.length; i++) {
     const service = services.value[i]
-    if (!service.name?.trim()) {
-      error.value = `Service ${i + 1} name is required`
+    if (!service.serviceCode?.trim()) {
+      error.value = `Service ${i + 1} code is required`
       return false
     }
     if (service.price && service.price <= 0) {
@@ -80,23 +148,46 @@ const handleSubmit = async () => {
 
     // Create customer first
     const customer = await customerApi.createCustomer({
-      name: customerForm.name.trim(),
-      email: customerForm.email.trim(),
-      phone: customerForm.phone.trim(),
-      address: customerForm.address.trim(),
+      contactFirstName: customerForm.contactFirstName.trim(),
+      contactMiddleName: customerForm.contactMiddleName.trim(),
+      contactSurname: customerForm.contactSurname.trim(),
+      businessName: customerForm.businessName.trim(),
+      phoneNumbers: customerForm.phoneNumbers.filter((phone) => phone.trim()),
+      emailAddresses: customerForm.emailAddresses.filter((email) => email.trim()),
+      physicalAddress: customerForm.physicalAddress.trim(),
+      addressState: customerForm.addressState.trim(),
+      addressLocalGovernment: customerForm.addressLocalGovernment.trim(),
+      addressCity: customerForm.addressCity.trim(),
     })
 
     // Create services for the customer
     const servicePromises = services.value
-      .filter((service) => service.name?.trim() && service.price && service.price > 0)
+      .filter((service) => service.serviceCode?.trim() && service.price && service.price > 0)
       .map((service) =>
         serviceApi.createService({
           customerId: customer.id,
-          name: service.name!.trim(),
+          serviceCode: service.serviceCode!.trim(),
           description: service.description?.trim() || '',
-          price: service.price!,
           status: service.status!,
-          isPaid: service.isPaid!,
+          bandwidth: service.bandwidth?.trim() || '',
+          serviceType: service.serviceType?.trim() || '',
+          servicePlatform: service.servicePlatform?.trim() || '',
+          billingCycle: service.billingCycle?.trim() || '',
+          billingCycleAmount: service.billingCycleAmount!,
+          cycleStartDate: service.cycleStartDate?.trim() || '',
+          cycleEndDate: service.cycleEndDate?.trim() || '',
+          billingMode: service.billingMode?.trim() || '',
+          serviceAddress: service.serviceAddress?.trim() || '',
+          addressState: service.addressState?.trim() || '',
+          addressCity: service.addressCity?.trim() || '',
+          addressLocalGovernment: service.addressLocalGovernment?.trim() || '',
+          serialNumber: service.serialNumber?.trim() || '',
+          macAddress: service.macAddress?.trim() || '',
+          coreDevice: service.coreDevice?.trim() || '',
+          coreInterface: service.coreInterface?.trim() || '',
+          networkPlatform: service.networkPlatform?.trim() || '',
+          wanIpAddress: service.wanIpAddress?.trim() || '',
+          price: service.price!,
         }),
       )
 
@@ -137,58 +228,183 @@ const handleSubmit = async () => {
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
-            <label for="name" class="block text-sm font-medium text-gray-700 mb-2">
-              Full Name *
+            <label for="businessName" class="block text-sm font-medium text-gray-700 mb-2">
+              Business Name *
             </label>
             <input
-              id="name"
-              v-model="customerForm.name"
+              id="businessName"
+              v-model="customerForm.businessName"
               type="text"
               required
               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-custom-red-500 focus:border-custom-red-500"
-              placeholder="Enter customer name"
+              placeholder="Enter business name"
             />
           </div>
 
           <div>
-            <label for="email" class="block text-sm font-medium text-gray-700 mb-2">
-              Email *
+            <label for="contactFirstName" class="block text-sm font-medium text-gray-700 mb-2">
+              Contact First Name *
             </label>
             <input
-              id="email"
-              v-model="customerForm.email"
-              type="email"
+              id="contactFirstName"
+              v-model="customerForm.contactFirstName"
+              type="text"
               required
               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-custom-red-500 focus:border-custom-red-500"
-              placeholder="Enter email address"
+              placeholder="Enter first name"
             />
           </div>
 
           <div>
-            <label for="phone" class="block text-sm font-medium text-gray-700 mb-2">
-              Phone *
+            <label for="contactMiddleName" class="block text-sm font-medium text-gray-700 mb-2">
+              Contact Middle Name
             </label>
             <input
-              id="phone"
-              v-model="customerForm.phone"
-              type="tel"
-              required
-              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-custom-red-500 focus:border-custom-red-500"
-              placeholder="Enter phone number"
-            />
-          </div>
-
-          <div>
-            <label for="address" class="block text-sm font-medium text-gray-700 mb-2">
-              Address
-            </label>
-            <input
-              id="address"
-              v-model="customerForm.address"
+              id="contactMiddleName"
+              v-model="customerForm.contactMiddleName"
               type="text"
               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-custom-red-500 focus:border-custom-red-500"
-              placeholder="Enter address"
+              placeholder="Enter middle name"
             />
+          </div>
+
+          <div>
+            <label for="contactSurname" class="block text-sm font-medium text-gray-700 mb-2">
+              Contact Surname *
+            </label>
+            <input
+              id="contactSurname"
+              v-model="customerForm.contactSurname"
+              type="text"
+              required
+              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-custom-red-500 focus:border-custom-red-500"
+              placeholder="Enter surname"
+            />
+          </div>
+
+          <div>
+            <label for="physicalAddress" class="block text-sm font-medium text-gray-700 mb-2">
+              Physical Address
+            </label>
+            <input
+              id="physicalAddress"
+              v-model="customerForm.physicalAddress"
+              type="text"
+              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-custom-red-500 focus:border-custom-red-500"
+              placeholder="Enter physical address"
+            />
+          </div>
+
+          <div>
+            <label for="addressState" class="block text-sm font-medium text-gray-700 mb-2">
+              State
+            </label>
+            <input
+              id="addressState"
+              v-model="customerForm.addressState"
+              type="text"
+              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-custom-red-500 focus:border-custom-red-500"
+              placeholder="Enter state"
+            />
+          </div>
+
+          <div>
+            <label for="addressCity" class="block text-sm font-medium text-gray-700 mb-2">
+              City
+            </label>
+            <input
+              id="addressCity"
+              v-model="customerForm.addressCity"
+              type="text"
+              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-custom-red-500 focus:border-custom-red-500"
+              placeholder="Enter city"
+            />
+          </div>
+
+          <div>
+            <label
+              for="addressLocalGovernment"
+              class="block text-sm font-medium text-gray-700 mb-2"
+            >
+              Local Government
+            </label>
+            <input
+              id="addressLocalGovernment"
+              v-model="customerForm.addressLocalGovernment"
+              type="text"
+              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-custom-red-500 focus:border-custom-red-500"
+              placeholder="Enter local government"
+            />
+          </div>
+        </div>
+
+        <!-- Phone Numbers -->
+        <div class="mt-6">
+          <label class="block text-sm font-medium text-gray-700 mb-2"> Phone Numbers * </label>
+          <div class="space-y-2">
+            <div
+              v-for="(phone, index) in customerForm.phoneNumbers"
+              :key="index"
+              class="flex gap-2"
+            >
+              <input
+                v-model="customerForm.phoneNumbers[index]"
+                type="tel"
+                :required="index === 0"
+                class="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-custom-red-500 focus:border-custom-red-500"
+                placeholder="Enter phone number"
+              />
+              <button
+                v-if="customerForm.phoneNumbers.length > 1"
+                type="button"
+                @click="removePhoneNumber(index)"
+                class="px-3 py-2 text-red-600 hover:text-red-800"
+              >
+                Remove
+              </button>
+            </div>
+            <button
+              type="button"
+              @click="addPhoneNumber"
+              class="text-custom-red-600 hover:text-custom-red-800 text-sm"
+            >
+              + Add Phone Number
+            </button>
+          </div>
+        </div>
+
+        <!-- Email Addresses -->
+        <div class="mt-6">
+          <label class="block text-sm font-medium text-gray-700 mb-2"> Email Addresses * </label>
+          <div class="space-y-2">
+            <div
+              v-for="(email, index) in customerForm.emailAddresses"
+              :key="index"
+              class="flex gap-2"
+            >
+              <input
+                v-model="customerForm.emailAddresses[index]"
+                type="email"
+                :required="index === 0"
+                class="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-custom-red-500 focus:border-custom-red-500"
+                placeholder="Enter email address"
+              />
+              <button
+                v-if="customerForm.emailAddresses.length > 1"
+                type="button"
+                @click="removeEmailAddress(index)"
+                class="px-3 py-2 text-red-600 hover:text-red-800"
+              >
+                Remove
+              </button>
+            </div>
+            <button
+              type="button"
+              @click="addEmailAddress"
+              class="text-custom-red-600 hover:text-custom-red-800 text-sm"
+            >
+              + Add Email Address
+            </button>
           </div>
         </div>
       </div>
@@ -227,18 +443,18 @@ const handleSubmit = async () => {
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label
-                  :for="`service-name-${index}`"
+                  :for="`service-code-${index}`"
                   class="block text-sm font-medium text-gray-700 mb-2"
                 >
-                  Service Name *
+                  Service Code *
                 </label>
                 <input
-                  :id="`service-name-${index}`"
-                  v-model="service.name"
+                  :id="`service-code-${index}`"
+                  v-model="service.serviceCode"
                   type="text"
                   required
                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-custom-red-500 focus:border-custom-red-500"
-                  placeholder="Enter service name"
+                  placeholder="Enter service code"
                 />
               </div>
 
@@ -261,6 +477,153 @@ const handleSubmit = async () => {
                 />
               </div>
 
+              <div>
+                <label
+                  :for="`service-status-${index}`"
+                  class="block text-sm font-medium text-gray-700 mb-2"
+                >
+                  Status
+                </label>
+                <select
+                  :id="`service-status-${index}`"
+                  v-model="service.status"
+                  class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-custom-red-500 focus:border-custom-red-500"
+                >
+                  <option value="active">Active</option>
+                  <option value="suspended">Suspended</option>
+                  <option value="cancelled">Cancelled</option>
+                  <option value="terminated">Terminated</option>
+                </select>
+              </div>
+
+              <div>
+                <label
+                  :for="`service-bandwidth-${index}`"
+                  class="block text-sm font-medium text-gray-700 mb-2"
+                >
+                  Bandwidth
+                </label>
+                <input
+                  :id="`service-bandwidth-${index}`"
+                  v-model="service.bandwidth"
+                  type="text"
+                  class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-custom-red-500 focus:border-custom-red-500"
+                  placeholder="e.g., 100 Mbps"
+                />
+              </div>
+
+              <div>
+                <label
+                  :for="`service-type-${index}`"
+                  class="block text-sm font-medium text-gray-700 mb-2"
+                >
+                  Service Type
+                </label>
+                <input
+                  :id="`service-type-${index}`"
+                  v-model="service.serviceType"
+                  type="text"
+                  class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-custom-red-500 focus:border-custom-red-500"
+                  placeholder="e.g., Internet"
+                />
+              </div>
+
+              <div>
+                <label
+                  :for="`service-platform-${index}`"
+                  class="block text-sm font-medium text-gray-700 mb-2"
+                >
+                  Service Platform
+                </label>
+                <input
+                  :id="`service-platform-${index}`"
+                  v-model="service.servicePlatform"
+                  type="text"
+                  class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-custom-red-500 focus:border-custom-red-500"
+                  placeholder="e.g., Fiber Optic"
+                />
+              </div>
+
+              <div>
+                <label
+                  :for="`service-billing-cycle-${index}`"
+                  class="block text-sm font-medium text-gray-700 mb-2"
+                >
+                  Billing Cycle
+                </label>
+                <input
+                  :id="`service-billing-cycle-${index}`"
+                  v-model="service.billingCycle"
+                  type="text"
+                  class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-custom-red-500 focus:border-custom-red-500"
+                  placeholder="e.g., Monthly"
+                />
+              </div>
+
+              <div>
+                <label
+                  :for="`service-billing-amount-${index}`"
+                  class="block text-sm font-medium text-gray-700 mb-2"
+                >
+                  Billing Cycle Amount
+                </label>
+                <input
+                  :id="`service-billing-amount-${index}`"
+                  v-model.number="service.billingCycleAmount"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-custom-red-500 focus:border-custom-red-500"
+                  placeholder="0.00"
+                />
+              </div>
+
+              <div>
+                <label
+                  :for="`service-cycle-start-${index}`"
+                  class="block text-sm font-medium text-gray-700 mb-2"
+                >
+                  Cycle Start Date
+                </label>
+                <input
+                  :id="`service-cycle-start-${index}`"
+                  v-model="service.cycleStartDate"
+                  type="date"
+                  class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-custom-red-500 focus:border-custom-red-500"
+                />
+              </div>
+
+              <div>
+                <label
+                  :for="`service-cycle-end-${index}`"
+                  class="block text-sm font-medium text-gray-700 mb-2"
+                >
+                  Cycle End Date
+                </label>
+                <input
+                  :id="`service-cycle-end-${index}`"
+                  v-model="service.cycleEndDate"
+                  type="date"
+                  class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-custom-red-500 focus:border-custom-red-500"
+                />
+              </div>
+
+              <div>
+                <label
+                  :for="`service-billing-mode-${index}`"
+                  class="block text-sm font-medium text-gray-700 mb-2"
+                >
+                  Billing Mode
+                </label>
+                <input
+                  :id="`service-billing-mode-${index}`"
+                  v-model="service.billingMode"
+                  type="text"
+                  class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-custom-red-500 focus:border-custom-red-500"
+                  placeholder="e.g., Prepaid"
+                />
+              </div>
+
               <div class="md:col-span-2">
                 <label
                   :for="`service-description-${index}`"
@@ -275,36 +638,6 @@ const handleSubmit = async () => {
                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-custom-red-500 focus:border-custom-red-500 resize-none"
                   placeholder="Enter service description"
                 ></textarea>
-              </div>
-
-              <div>
-                <label
-                  :for="`service-status-${index}`"
-                  class="block text-sm font-medium text-gray-700 mb-2"
-                >
-                  Status
-                </label>
-                <select
-                  :id="`service-status-${index}`"
-                  v-model="service.status"
-                  class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-custom-red-500 focus:border-custom-red-500"
-                >
-                  <option value="pending">Pending</option>
-                  <option value="completed">Completed</option>
-                  <option value="cancelled">Cancelled</option>
-                </select>
-              </div>
-
-              <div class="flex items-center self-end">
-                <input
-                  :id="`service-paid-${index}`"
-                  v-model="service.isPaid"
-                  type="checkbox"
-                  class="h-4 w-4 text-custom-red-600 focus:ring-custom-red-500 border-gray-300 rounded"
-                />
-                <label :for="`service-paid-${index}`" class="ml-2 block text-sm text-gray-900">
-                  Payment Received
-                </label>
               </div>
             </div>
           </div>
