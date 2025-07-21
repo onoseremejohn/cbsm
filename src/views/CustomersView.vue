@@ -1,21 +1,28 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { customerApi } from '@/services/api'
 import type { CustomerWithServices, CustomerStats } from '@/types/customer'
 import UsersStatsIcon from '@/components/icons/UsersStatsIcon.vue'
-import RevenueIcon from '@/components/icons/RevenueIcon.vue'
-import GrowthIcon from '@/components/icons/GrowthIcon.vue'
 import AnalyticsIcon from '@/components/icons/AnalyticsIcon.vue'
 import StatsCard from '@/components/StatsCard.vue'
 import LoadingSpinner from '@/components/LoadingSpinner.vue'
-// import AutoResizingGrid from '@/components/AutoResizingGrid.vue'
+import ActionsDropdown from '@/components/ActionsDropdown.vue'
+import PaginationData from '@/components/PaginationData.vue'
+import AddCustomerModal from '@/components/AddCustomerModal.vue'
 
 const router = useRouter()
 const customers = ref<CustomerWithServices[]>([])
 const stats = ref<CustomerStats | null>(null)
 const loading = ref(true)
 const error = ref<string | null>(null)
+
+// Modal state
+const showAddCustomerModal = ref(false)
+
+// Pagination state
+const currentPage = ref(1)
+const perPage = ref(10)
 
 const loadData = async () => {
   try {
@@ -37,29 +44,46 @@ const loadData = async () => {
   }
 }
 
-const formatCurrency = (amount: number) => {
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
-  }).format(amount)
-}
-
-const getStatusColor = (status: string) => {
-  switch (status) {
-    case 'completed':
-      return 'bg-green-100 text-green-800'
-    case 'pending':
-      return 'bg-yellow-100 text-yellow-800'
-    case 'cancelled':
-      return 'bg-red-100 text-red-800'
-    default:
-      return 'bg-gray-100 text-gray-800'
-  }
-}
-
 const navigateToCustomer = (customerId: number) => {
   router.push(`/customers/${customerId}`)
 }
+
+const editCustomer = (customerId: number) => {
+  router.push(`/customers/${customerId}/edit`)
+}
+
+// Modal handlers
+const openAddCustomerModal = () => {
+  showAddCustomerModal.value = true
+}
+
+const closeAddCustomerModal = () => {
+  showAddCustomerModal.value = false
+}
+
+const handleCustomerCreated = () => {
+  // Reload data to include the new customer
+  loadData()
+}
+
+// Pagination methods
+const handlePageChange = (page: number) => {
+  currentPage.value = page
+}
+
+const handlePerPageChange = (newPerPage: number) => {
+  perPage.value = newPerPage
+  currentPage.value = 1
+}
+
+// Computed properties for pagination
+const totalCount = computed(() => customers.value.length)
+const totalPages = computed(() => Math.ceil(totalCount.value / perPage.value))
+const paginatedCustomers = computed(() => {
+  const start = (currentPage.value - 1) * perPage.value
+  const end = start + perPage.value
+  return customers.value.slice(start, end)
+})
 
 onMounted(() => {
   loadData()
@@ -69,32 +93,24 @@ onMounted(() => {
 <template>
   <div class="space-y-6">
     <!-- Header -->
-    <div class="flex justify-between items-center">
+    <div class="flex justify-between items-center gap-4">
       <div>
         <h1 class="text-2xl font-bold text-gray-900">Customers</h1>
         <p class="text-gray-600">Manage your customers and their services</p>
       </div>
-      <RouterLink
-        to="/customers/add"
+      <button
+        @click="openAddCustomerModal"
         class="bg-custom-red-600 text-white px-4 py-2 rounded-lg hover:bg-custom-red-700 transition-colors inline-block"
       >
         Add Customer
-      </RouterLink>
+      </button>
     </div>
 
     <!-- Stats Cards -->
-    <!-- <AutoResizingGrid v-if="false" :min-width="280" :gap="24"> -->
     <div v-if="stats" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
       <StatsCard title="Total Customers" :value="stats.totalCustomers" :icon="UsersStatsIcon" />
       <StatsCard title="Total Services" :value="stats.totalServices" :icon="AnalyticsIcon" />
-      <StatsCard
-        title="Total Revenue"
-        :value="formatCurrency(stats.totalRevenue)"
-        :icon="RevenueIcon"
-      />
-      <StatsCard title="Pending Services" :value="stats.pendingServices" :icon="GrowthIcon" />
     </div>
-    <!-- </AutoResizingGrid> -->
 
     <!-- Loading State -->
     <LoadingSpinner v-if="loading" />
@@ -115,113 +131,87 @@ onMounted(() => {
 
       <div class="overflow-x-auto">
         <table class="min-w-full divide-y divide-gray-200">
-          <thead class="bg-gray-50">
+          <thead
+            class="sticky top-0 font-semibold text-left text-gray-500 text-xs uppercase tracking-wider bg-gray-50"
+          >
             <tr>
-              <th
-                class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-              >
-                Customer
-              </th>
-              <th
-                class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-              >
-                Contact
-              </th>
-              <th
-                class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-              >
-                Services
-              </th>
-              <th
-                class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-              >
-                Total Value
-              </th>
-              <th
-                class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-              >
-                Status
-              </th>
-              <th
-                class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-              >
-                Actions
-              </th>
+              <th class="px-6 py-3">Business Name</th>
+              <th class="px-6 py-3">Contact Name</th>
+              <th class="px-6 py-3">Contact Info</th>
+              <th class="px-6 py-3">Location</th>
+              <th class="px-6 py-3">Services</th>
+              <th class="px-6 py-3">Actions</th>
             </tr>
           </thead>
           <tbody class="bg-white divide-y divide-gray-200">
             <tr
-              v-for="customer in customers"
+              v-for="customer in paginatedCustomers"
               :key="customer.id"
               class="hover:bg-gray-50 cursor-pointer"
               @click="navigateToCustomer(customer.id)"
             >
               <td class="px-6 py-4 whitespace-nowrap">
-                <div>
-                  <div class="text-sm font-medium text-gray-900">{{ customer.name }}</div>
-                  <div class="text-sm text-gray-500">{{ customer.address }}</div>
-                </div>
+                <div class="text-sm font-medium text-gray-900">{{ customer.business_name }}</div>
               </td>
               <td class="px-6 py-4 whitespace-nowrap">
                 <div>
-                  <div class="text-sm text-gray-900">{{ customer.email }}</div>
-                  <div class="text-sm text-gray-500">{{ customer.phone }}</div>
+                  <div class="text-sm text-gray-900">
+                    {{ customer.contact_first_name }} {{ customer.contact_surname }}
+                  </div>
+                </div>
+              </td>
+
+              <td class="px-6 py-4 whitespace-nowrap">
+                <div>
+                  <div class="text-sm text-gray-900">
+                    {{ customer.email_addresses[0] || 'N/A' }}
+                  </div>
+                  <div class="text-sm text-gray-500">{{ customer.phone_numbers[0] || 'N/A' }}</div>
                 </div>
               </td>
               <td class="px-6 py-4 whitespace-nowrap">
-                <div class="text-sm text-gray-900">{{ customer.services.length }} services</div>
-                <div class="text-sm text-gray-500">
-                  {{ customer.services.filter((s) => s.status === 'completed').length }} completed
+                <div>
+                  <div class="text-sm text-gray-900">{{ customer.city }}, {{ customer.state }}</div>
+                  <div class="text-sm text-gray-500">{{ customer.local_government_area }}</div>
                 </div>
               </td>
               <td class="px-6 py-4 whitespace-nowrap">
-                <div class="text-sm font-medium text-gray-900">
-                  {{ formatCurrency(customer.services.reduce((sum, s) => sum + s.price, 0)) }}
-                </div>
-                <div class="text-sm text-gray-500">
-                  {{ customer.services.filter((s) => s.isPaid).length }}/{{
-                    customer.services.length
+                <div class="text-sm text-gray-900">
+                  {{ customer.services.length }} service{{
+                    customer.services.length > 1 ? 's' : ''
                   }}
-                  paid
-                </div>
-              </td>
-              <td class="px-6 py-4 whitespace-nowrap">
-                <div class="flex flex-col space-y-1">
-                  <span
-                    v-for="service in customer.services.slice(0, 2)"
-                    :key="service.id"
-                    :class="[
-                      'inline-flex px-2 py-1 text-xs font-medium rounded-full',
-                      getStatusColor(service.status),
-                    ]"
-                  >
-                    {{ service.status }}
-                  </span>
-                  <span v-if="customer.services.length > 2" class="text-xs text-gray-500">
-                    +{{ customer.services.length - 2 }} more
-                  </span>
                 </div>
               </td>
               <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                <div class="flex space-x-2">
-                  <button
-                    @click.stop="navigateToCustomer(customer.id)"
-                    class="text-custom-red-600 hover:text-custom-red-900"
-                  >
-                    View
-                  </button>
-                  <button
-                    @click.stop="router.push(`/customers/${customer.id}/edit`)"
-                    class="text-blue-600 hover:text-blue-900"
-                  >
-                    Edit
-                  </button>
-                </div>
+                <ActionsDropdown
+                  :actions="[
+                    { label: 'View', action: () => navigateToCustomer(customer.id) },
+                    { label: 'Edit', action: () => editCustomer(customer.id) },
+                  ]"
+                />
               </td>
             </tr>
           </tbody>
         </table>
       </div>
     </div>
+
+    <!-- Pagination -->
+    <PaginationData
+      v-if="!loading && !error"
+      :total-count="totalCount"
+      :current-page="currentPage"
+      :total-pages="totalPages"
+      :per-page="perPage"
+      @page-change="handlePageChange"
+      @per-page-change="handlePerPageChange"
+    />
+
+    <!-- Add Customer Modal -->
+    <AddCustomerModal
+      :is-open="showAddCustomerModal"
+      @close="closeAddCustomerModal"
+      @customer-created="handleCustomerCreated"
+    />
   </div>
 </template>

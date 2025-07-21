@@ -1,20 +1,24 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { customerApi, serviceApi } from '@/services/api'
+import { customerApi } from '@/services/api'
 import type { CustomerWithServices } from '@/types/customer'
 import UsersStatsIcon from '@/components/icons/UsersStatsIcon.vue'
-import RevenueIcon from '@/components/icons/RevenueIcon.vue'
-import GrowthIcon from '@/components/icons/GrowthIcon.vue'
 import BackButton from '@/components/BackButton.vue'
 import LoadingSpinner from '@/components/LoadingSpinner.vue'
 import StatsCard from '@/components/StatsCard.vue'
+import ActionsDropdown from '@/components/ActionsDropdown.vue'
+import PaginationData from '@/components/PaginationData.vue'
 
 const route = useRoute()
 const router = useRouter()
 const customer = ref<CustomerWithServices | null>(null)
 const loading = ref(true)
 const error = ref<string | null>(null)
+
+// Pagination state for services
+const currentPage = ref(1)
+const perPage = ref(10)
 
 const customerId = Number(route.params.id)
 
@@ -45,39 +49,18 @@ const formatCurrency = (amount: number) => {
   }).format(amount)
 }
 
-const formatDate = (dateString: string) => {
-  return new Date(dateString).toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  })
-}
-
 const getStatusColor = (status: string) => {
   switch (status) {
-    case 'completed':
+    case 'active':
       return 'bg-green-100 text-green-800'
-    case 'pending':
+    case 'suspended':
       return 'bg-yellow-100 text-yellow-800'
     case 'cancelled':
       return 'bg-red-100 text-red-800'
+    case 'terminated':
+      return 'bg-gray-100 text-gray-800'
     default:
       return 'bg-gray-100 text-gray-800'
-  }
-}
-
-const getPaymentStatusColor = (isPaid: boolean) => {
-  return isPaid ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-}
-
-const markServiceAsPaid = async (serviceId: number) => {
-  try {
-    await serviceApi.markServiceAsPaid(serviceId)
-    await loadCustomer() // Reload to get updated data
-  } catch (err) {
-    console.error('Error marking service as paid:', err)
   }
 }
 
@@ -92,6 +75,26 @@ const navigateToAddService = () => {
 const navigateToEditService = (serviceId: number) => {
   router.push(`/customers/${customerId}/services/${serviceId}/edit`)
 }
+
+// Pagination methods for services
+const handlePageChange = (page: number) => {
+  currentPage.value = page
+}
+
+const handlePerPageChange = (newPerPage: number) => {
+  perPage.value = newPerPage
+  currentPage.value = 1
+}
+
+// Computed properties for services pagination
+const totalServicesCount = computed(() => customer.value?.services.length || 0)
+const totalServicesPages = computed(() => Math.ceil(totalServicesCount.value / perPage.value))
+const paginatedServices = computed(() => {
+  if (!customer.value) return []
+  const start = (currentPage.value - 1) * perPage.value
+  const end = start + perPage.value
+  return customer.value.services.slice(start, end)
+})
 
 onMounted(() => {
   loadCustomer()
@@ -145,16 +148,6 @@ onMounted(() => {
           :value="customer.services.length"
           :icon="UsersStatsIcon"
         />
-        <StatsCard
-          title="Total Value"
-          :value="formatCurrency(customer.services.reduce((sum, s) => sum + s.price, 0))"
-          :icon="RevenueIcon"
-        />
-        <StatsCard
-          title="Paid Services"
-          :value="customer.services.filter((s) => s.isPaid).length"
-          :icon="GrowthIcon"
-        />
       </div>
 
       <!-- Customer Details -->
@@ -165,28 +158,51 @@ onMounted(() => {
         <div class="p-6">
           <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">Name</label>
-              <p class="text-gray-900">{{ customer.name }}</p>
+              <label class="block text-sm font-medium text-gray-700 mb-2">Business Name</label>
+              <p class="text-gray-900 font-medium">{{ customer.business_name }}</p>
             </div>
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">Email</label>
-              <p class="text-gray-900">{{ customer.email }}</p>
+              <label class="block text-sm font-medium text-gray-700 mb-2">Contact Name</label>
+              <p class="text-gray-900">
+                {{ customer.contact_first_name }} {{ customer.contact_surname }}
+                <span v-if="customer.contact_middle_name" class="text-gray-500">
+                  ({{ customer.contact_middle_name }})
+                </span>
+              </p>
             </div>
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">Phone</label>
-              <p class="text-gray-900">{{ customer.phone }}</p>
+              <label class="block text-sm font-medium text-gray-700 mb-2">Phone Numbers</label>
+              <div class="space-y-1">
+                <p v-for="phone in customer.phone_numbers" :key="phone" class="text-gray-900">
+                  {{ phone }}
+                </p>
+                <p v-if="customer.phone_numbers.length === 0" class="text-gray-500">
+                  No phone numbers
+                </p>
+              </div>
             </div>
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">Address</label>
-              <p class="text-gray-900">{{ customer.address }}</p>
+              <label class="block text-sm font-medium text-gray-700 mb-2">Email Addresses</label>
+              <div class="space-y-1">
+                <p v-for="email in customer.email_addresses" :key="email" class="text-gray-900">
+                  {{ email }}
+                </p>
+                <p v-if="customer.email_addresses.length === 0" class="text-gray-500">
+                  No email addresses
+                </p>
+              </div>
             </div>
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">Created</label>
-              <p class="text-gray-900">{{ formatDate(customer.createdAt) }}</p>
+              <label class="block text-sm font-medium text-gray-700 mb-2">Physical Address</label>
+              <p class="text-gray-900">{{ customer.physical_address }}</p>
             </div>
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">Last Updated</label>
-              <p class="text-gray-900">{{ formatDate(customer.updatedAt) }}</p>
+              <label class="block text-sm font-medium text-gray-700 mb-2">Location</label>
+              <p class="text-gray-900">
+                {{ customer.city }}, {{ customer.state }}
+                <br />
+                <span class="text-gray-500">{{ customer.local_government_area }}</span>
+              </p>
             </div>
           </div>
         </div>
@@ -208,93 +224,86 @@ onMounted(() => {
           </button>
         </div>
 
-        <div v-else class="overflow-x-auto">
-          <table class="min-w-full divide-y divide-gray-200">
-            <thead class="bg-gray-50">
-              <tr>
-                <th
-                  class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                >
-                  Service
-                </th>
-                <th
-                  class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                >
-                  Price
-                </th>
-                <th
-                  class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                >
-                  Status
-                </th>
-                <th
-                  class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                >
-                  Payment
-                </th>
-                <th
-                  class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                >
-                  Actions
-                </th>
-              </tr>
-            </thead>
-            <tbody class="bg-white divide-y divide-gray-200">
-              <tr v-for="service in customer.services" :key="service.id">
-                <td class="px-6 py-4">
-                  <div>
-                    <div class="text-sm font-medium text-gray-900">{{ service.name }}</div>
-                    <div class="text-sm text-gray-500">{{ service.description }}</div>
-                    <div class="text-xs text-gray-400">
-                      Created: {{ formatDate(service.createdAt) }}
+        <div v-else>
+          <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+              <thead
+                class="sticky top-0 font-semibold text-left text-gray-500 text-xs uppercase tracking-wider bg-gray-50"
+              >
+                <tr>
+                  <th class="px-6 py-3">Service Code</th>
+                  <th class="px-6 py-3">Description</th>
+                  <th class="px-6 py-3">Bandwidth</th>
+                  <th class="px-6 py-3">Service Type</th>
+                  <th class="px-6 py-3">Service Platform</th>
+                  <th class="px-6 py-3">Billing Cycle</th>
+                  <th class="px-6 py-3">Billing Amount</th>
+                  <th class="px-6 py-3">Status</th>
+                  <th class="px-6 py-3">Actions</th>
+                </tr>
+              </thead>
+              <tbody class="bg-white divide-y divide-gray-200">
+                <tr v-for="service in paginatedServices" :key="service.id" class="hover:bg-gray-50">
+                  <td class="px-6 py-4 whitespace-nowrap">
+                    <div class="text-sm font-medium text-gray-900">{{ service.serviceCode }}</div>
+                  </td>
+                  <td class="px-6 py-4">
+                    <div class="text-sm text-gray-900">{{ service.description || 'N/A' }}</div>
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap">
+                    <div class="text-sm text-gray-900">{{ service.bandwidth || 'N/A' }}</div>
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap">
+                    <div class="text-sm text-gray-900">{{ service.serviceType || 'N/A' }}</div>
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap">
+                    <div class="text-sm text-gray-900">{{ service.servicePlatform || 'N/A' }}</div>
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap">
+                    <div class="text-sm text-gray-900">{{ service.billingCycle || 'N/A' }}</div>
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap">
+                    <div class="text-sm font-medium text-gray-900">
+                      {{
+                        service.billingCycleAmount
+                          ? formatCurrency(service.billingCycleAmount)
+                          : 'N/A'
+                      }}
                     </div>
-                  </div>
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap">
-                  <div class="text-sm font-medium text-gray-900">
-                    {{ formatCurrency(service.price) }}
-                  </div>
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap">
-                  <span
-                    :class="[
-                      'inline-flex px-2 py-1 text-xs font-medium rounded-full',
-                      getStatusColor(service.status),
-                    ]"
-                  >
-                    {{ service.status }}
-                  </span>
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap">
-                  <span
-                    :class="[
-                      'inline-flex px-2 py-1 text-xs font-medium rounded-full',
-                      getPaymentStatusColor(service.isPaid),
-                    ]"
-                  >
-                    {{ service.isPaid ? 'Paid' : 'Unpaid' }}
-                  </span>
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                  <div class="flex space-x-2">
-                    <button
-                      v-if="!service.isPaid"
-                      @click="markServiceAsPaid(service.id)"
-                      class="text-green-600 hover:text-green-900"
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap">
+                    <span
+                      :class="[
+                        'inline-flex px-2 py-1 text-xs font-medium rounded-full',
+                        getStatusColor(service.status),
+                      ]"
                     >
-                      Mark Paid
-                    </button>
-                    <button
-                      @click="navigateToEditService(service.id)"
-                      class="text-blue-600 hover:text-blue-900"
-                    >
-                      Edit
-                    </button>
-                  </div>
-                </td>
-              </tr>
-            </tbody>
-          </table>
+                      {{ service.status }}
+                    </span>
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                    <ActionsDropdown
+                      :actions="[
+                        { label: 'Edit', action: () => navigateToEditService(service.id) },
+                      ]"
+                    />
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Services Pagination -->
+          <div class="px-6 py-4 border-t border-gray-200">
+            <PaginationData
+              :total-count="totalServicesCount"
+              :current-page="currentPage"
+              :total-pages="totalServicesPages"
+              :per-page="perPage"
+              @page-change="handlePageChange"
+              @per-page-change="handlePerPageChange"
+            />
+          </div>
         </div>
       </div>
     </div>

@@ -100,20 +100,20 @@ onUnmounted(() => {
   <!-- Mobile/Tablet Overlay -->
   <div
     v-if="!isLargeScreen && isOpen"
-    class="fixed inset-0 bg-black/20 z-999 lg:hidden"
+    class="fixed inset-0 bg-black/20 z-50 lg:hidden"
     @click="emit('close')"
   ></div>
 
   <!-- Sidebar -->
   <aside
     :class="[
-      'fixed top-0 left-0 h-screen w-sidebar bg-custom-red-600 text-white z-1000 transition-transform duration-300 ease-in-out',
+      'fixed top-0 left-0 h-screen w-sidebar bg-custom-red-600 text-white z-51 transition-transform duration-300 ease-in-out',
       'lg:translate-x-0 lg:relative',
       isLargeScreen ? 'translate-x-0' : isOpen ? 'translate-x-0' : '-translate-x-full',
     ]"
   >
     <!-- Sidebar Header -->
-    <div class="flex items-center justify-between p-6 border-b border-custom-red-500 bg-gray-800">
+    <div class="flex items-center justify-between p-6 border-b border-white bg-gray-800">
       <img :src="logo" alt="ipNX Logo" />
       <button
         v-if="!isLargeScreen"
